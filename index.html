@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XR Study Room — Spatial Memorization Through Immersive VR Learning</title>
+<meta name="description" content="An AR/VR Design final project at the University of Rochester. XR Study Room turns memorization into a walkable architecture of recall on Meta Quest 3.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Instrument+Serif:ital@0;1&family=Caveat:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f1e9d6;
+    --paper-shade: #e7dec7;
+    --paper-deep: #ddd1b4;
+    --ink: #1f1a14;
+    --ink-soft: #4a4138;
+    --ink-faint: #8a7f6f;
+    --rule: #b8a988;
+    --rule-soft: rgba(31, 26, 20, 0.14);
+    --red: #b53524;
+    --red-soft: #c8503e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-weight: 400;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.4;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' seed='3'/><feColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* ============= NAV ============= */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: rgba(241, 233, 214, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule-soft);
+    padding: 14px 32px;
+  }
+  .nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+  }
+  .nav-brand {
+    font-family: 'Instrument Serif', serif;
+    font-size: 19px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .nav-brand em { font-style: italic; color: var(--red); }
+  .nav-links {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .nav-links a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--red); }
+
+  @media (max-width: 800px) {
+    .nav-links { display: none; }
+  }
+
+  /* ============= LAYOUT ============= */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  section {
+    padding: 80px 0;
+    position: relative;
+  }
+  section + section {
+    border-top: 1px solid var(--rule-soft);
+  }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: inline-block;
+  }
+
+  .section-title {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 32px;
+    max-width: 720px;
+  }
+  .section-title em {
+    font-style: italic;
+    color: var(--red);
+  }
+
+  p {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+  p.lede {
+    font-size: 19px;
+    color: var(--ink-soft);
+    max-width: 720px;
+  }
+  p.lede em {
+    font-style: italic;
+    color: var(--ink);
+  }
+  strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  em {
+    font-style: italic;
+  }
+  a {
+    color: var(--red);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+  }
+  a:hover { color: var(--red-soft); }
+
+  ul {
+    margin: 0 0 18px 22px;
+    padding: 0;
+  }
+  li {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  /* ============= HERO ============= */
+  .hero {
+    padding: 130px 32px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 32px; }
+  }
+
+  .hero-eyebrow {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--red);
+    margin-bottom: 20px;
+  }
+  .hero-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(64px, 9vw, 108px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .hero-title em {
+    font-style: italic;
+    position: relative;
+    display: inline-block;
+  }
+  .ink-circle {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    pointer-events: none;
+  }
+
+  .hero-lede {
+    font-family: 'EB Garamond', serif;
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 28px;
+    max-width: 480px;
+  }
+  .hero-lede em {
+    font-style: italic;
+    font-size: 21px;
+  }
+  .hero-lede .keyword {
+    background-image: linear-gradient(transparent 70%, rgba(181, 53, 36, 0.32) 70%);
+    padding: 0 1px;
+    font-weight: 500;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .hero-meta div span {
+    display: block;
+    color: var(--ink-faint);
+    margin-bottom: 4px;
+    font-size: 9.5px;
+  }
+  .hero-meta div strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .hero-figure {
+    position: relative;
+  }
+  .hero-figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ============= SPECS ============= */
+  .specs-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-top: 24px;
+    padding: 28px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  @media (max-width: 800px) {
+    .specs-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .spec {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-right: 16px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .spec:last-child { border-right: none; }
+  @media (max-width: 800px) {
+    .spec:nth-child(2) { border-right: none; }
+  }
+  .spec-label {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-faint);
+  }
+  .spec-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .spec-sub {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  /* ============= TEAM ============= */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 32px;
+  }
+  @media (max-width: 800px) {
+    .team-grid { grid-template-columns: 1fr; gap: 22px; }
+  }
+  .team-card {
+    padding: 26px;
+    background: var(--paper-shade);
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+  }
+  .team-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 26px;
+    color: var(--ink);
+    background: var(--paper);
+    margin-bottom: 16px;
+  }
+  .team-name {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .team-role {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--red);
+    margin-bottom: 14px;
+  }
+  .team-contrib {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  /* ============= USER SCENARIO BLOCKS ============= */
+  .scenario {
+    margin-top: 40px;
+    padding: 32px;
+    background: var(--paper-shade);
+    border: 1px solid var(--rule-soft);
+    border-left: 3px solid var(--red);
+  }
+  .scenario-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .scenario-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+  .scenario-title em { font-style: italic; color: var(--red); }
+  .scenario-persona {
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-bottom: 22px;
+    font-size: 15.5px;
+  }
+  .scenario-image {
+    margin: 0 0 22px;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    overflow: hidden;
+  }
+  .scenario-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .scenario-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    margin-top: 16px;
+  }
+  @media (max-width: 800px) {
+    .scenario-grid { grid-template-columns: 1fr; gap: 20px; }
+  }
+  .scenario-block h4 {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--red);
+    margin-bottom: 10px;
+    font-weight: 400;
+  }
+  .scenario-block p {
+    font-size: 15.5px;
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+
+  /* ============= EVALUATION ============= */
+  .eval-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 24px;
+  }
+  @media (max-width: 800px) {
+    .eval-grid { grid-template-columns: 1fr; gap: 20px; }
+  }
+  .eval-card {
+    padding: 24px;
+    border-top: 2px solid var(--ink);
+  }
+  .eval-card h3 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+  .eval-card h3 em { font-style: italic; color: var(--red); }
+  .eval-card p {
+    font-size: 15.5px;
+    line-height: 1.55;
+    margin-bottom: 10px;
+  }
+  .eval-card ul {
+    margin: 8px 0 12px 18px;
+  }
+  .eval-card li {
+    font-size: 14.5px;
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+
+  /* ============= VIDEO PLACEHOLDER ============= */
+  .video-wrap {
+    margin-top: 32px;
+    aspect-ratio: 16 / 9;
+    background: var(--paper-shade);
+    border: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .video-wrap iframe,
+  .video-wrap video {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+  .video-placeholder {
+    text-align: center;
+    padding: 32px;
+  }
+  .video-placeholder .play-icon {
+    width: 72px;
+    height: 72px;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    background: var(--paper);
+  }
+  .video-placeholder .play-icon::after {
+    content: "";
+    width: 0;
+    height: 0;
+    border-left: 18px solid var(--ink);
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    margin-left: 4px;
+  }
+  .video-placeholder p {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+  .video-placeholder .hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-top: 8px;
+    font-style: normal;
+  }
+
+  /* ============= STORYBOARD ============= */
+  .storyboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-top: 28px;
+  }
+  @media (max-width: 800px) {
+    .storyboard { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  }
+  .frame {
+    aspect-ratio: 1 / 1;
+    background: var(--paper-shade);
+    border: 1px solid var(--rule);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .frame-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .frame-sketch {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px 0;
+  }
+  .frame-sketch svg {
+    width: 100%;
+    height: 100%;
+    max-height: 110px;
+  }
+  .frame-label {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+
+  /* ============= FOOTER ============= */
+  footer {
+    padding: 60px 32px 40px;
+    border-top: 1.5px solid var(--ink);
+    background: var(--paper-shade);
+  }
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .footer-credit {
+    font-family: 'Instrument Serif', serif;
+    font-size: 18px;
+    color: var(--ink);
+  }
+  .footer-credit em { font-style: italic; color: var(--red); }
+  .footer-meta {
+    text-align: right;
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .footer-meta strong {
+    font-style: normal;
+    font-weight: 500;
+    color: var(--ink);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  /* ============= UTILITIES ============= */
+  .scroll-target { scroll-margin-top: 80px; }
+
+  .pull-quote {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 26px;
+    line-height: 1.35;
+    color: var(--ink);
+    border-left: 3px solid var(--red);
+    padding: 6px 0 6px 22px;
+    margin: 28px 0;
+    max-width: 720px;
+  }
+
+  .keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0 24px;
+  }
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    background: var(--paper-shade);
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    border-radius: 2px;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ============= NAV ============= -->
+<nav>
+  <div class="nav-inner">
+    <a href="#top" class="nav-brand">XR Study <em>Room.</em></a>
+    <div class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#background">Background</a>
+      <a href="#prototype">Prototype</a>
+      <a href="#evaluation">Evaluation</a>
+      <a href="#video">Demo</a>
+      <a href="#team">Team</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============= HERO ============= -->
+<section class="hero" id="top">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">An immersive learning environment, built room by room.</div>
+      <h1 class="hero-title">
+        XR<br>
+        Study <em>Room.<svg class="ink-circle" viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <path d="M 28 70 Q 22 28, 80 16 Q 145 4, 220 12 Q 282 22, 280 72 Q 274 122, 200 130 Q 120 134, 60 124 Q 18 116, 24 76 Q 26 60, 32 50"
+                fill="none" stroke="#b53524" stroke-width="1.6" stroke-linecap="round" opacity="0.85"/>
+          <path d="M 32 74 Q 30 36, 84 20 Q 150 8, 220 16 Q 278 26, 276 70 Q 270 118, 196 126"
+                fill="none" stroke="#b53524" stroke-width="0.8" stroke-linecap="round" opacity="0.55"/>
+        </svg></em>
+      </h1>
+      <p class="hero-lede">
+        <em>Memory has always been spatial.</em> We bring to you a virtual study room where you can <span class="keyword">grab</span>, <span class="keyword">place</span>, and <span class="keyword">anchor</span> memory.
+      </p>
+      <div class="hero-meta">
+        <div><span>Course</span><strong>CSC 216 · AR/VR Design</strong></div>
+        <div><span>Term</span><strong>Spring 2026</strong></div>
+        <div><span>Institution</span><strong>University of Rochester</strong></div>
+      </div>
+    </div>
+    <div class="hero-figure">
+      <img src="assets/figure.png" alt="Hand-drawn illustration of a student wearing a Quest 3 headset, placing artifacts in their virtual study room.">
+    </div>
+  </div>
+</section>
+
+<!-- ============= OVERVIEW ============= -->
+<section id="overview" class="scroll-target">
+  <div class="container">
+    <div class="section-num">01 / Overview</div>
+    <h2 class="section-title">Spatial memorization through <em>immersive VR learning.</em></h2>
+    <p class="lede">
+      XR Study Room is a Meta Quest 3 application that lets students turn a virtual room into a study space. They grab cards, models, and labels from a floating menu and place them anywhere in the room. When it's time to review, the room itself becomes the index, walking it is the quiz.
+    </p>
+
+    <div class="keyword-tags">
+      <span class="tag">Meta Quest 3</span>
+      <span class="tag">Unity · XR Toolkit</span>
+      <span class="tag">Hand Tracking</span>
+      <span class="tag">Spatial Memory</span>
+      <span class="tag">Method of Loci</span>
+    </div>
+
+    <div class="specs-grid">
+      <div class="spec">
+        <div class="spec-label">Platform</div>
+        <div class="spec-value">Meta Quest 3</div>
+        <div class="spec-sub">standalone, 6dof</div>
+      </div>
+      <div class="spec">
+        <div class="spec-label">Built with</div>
+        <div class="spec-value">Unity · XR Toolkit</div>
+        <div class="spec-sub">XR interaction toolkit</div>
+      </div>
+      <div class="spec">
+        <div class="spec-label">Input</div>
+        <div class="spec-value">Hand Tracking</div>
+        <div class="spec-sub">controllers + optical recognition</div>
+      </div>
+      <div class="spec">
+        <div class="spec-label">Modes</div>
+        <div class="spec-value">Place · Recall</div>
+        <div class="spec-sub">authoring + spatial quiz</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= BACKGROUND ============= -->
+<section id="background" class="scroll-target">
+  <div class="container">
+    <div class="section-num">02 / Background</div>
+    <h2 class="section-title">Flat screens, <em>flat memory.</em></h2>
+
+    <p class="lede">
+      Flashcards and PDF readers strip away the very thing that makes recall stick: place. Without movement or environmental cues, students drift, lose focus, and forget. The medium is part of the problem.
+    </p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 32px;">
+      <div>
+        <h3 style="font-family: 'Instrument Serif', serif; font-size: 24px; margin-bottom: 12px; font-weight: 400;">The problem</h3>
+        <p>Traditional study tools, flashcards, slide decks, PDF chapters, ask the brain to memorize information stripped of any spatial or physical context. Research on the <em>method of loci</em> shows that the human memory is wired for places: we remember where we left our keys far better than we remember an arbitrary list of words.</p>
+        <p>Yet none of the dominant study mediums take advantage of this. They reduce knowledge to a one-dimensional scroll on a flat screen.</p>
+      </div>
+      <div>
+        <h3 style="font-family: 'Instrument Serif', serif; font-size: 24px; margin-bottom: 12px; font-weight: 400;">Our proposal</h3>
+        <p>Give students a room. Let them <strong>grab</strong> study artifacts (cards, 3D models, diagrams), <strong>place</strong> them in the room wherever they like, and <strong>anchor</strong> them to specific locations. The act of arranging the room becomes the act of learning.</p>
+        <p>When the user enters Quiz Mode, they walk the room and answer questions tied to each anchored item, recall driven by spatial cues rather than rote memorization.</p>
+      </div>
+    </div>
+
+    <h3 style="font-family: 'Instrument Serif', serif; font-size: 28px; margin: 56px 0 16px; font-weight: 400;">Storyboard</h3>
+    <p style="max-width: 720px;">A typical session unfolds in four steps: enter the room, populate it with study artifacts, walk away, return for a spatial quiz.</p>
+
+    <div class="storyboard">
+      <div class="frame">
+        <div class="frame-num">Frame 01</div>
+        <div class="frame-sketch">
+          <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#1f1a14" stroke-width="0.8" fill="none" stroke-linecap="round">
+              <path d="M 25 20 L 75 20 L 75 50 L 25 50 Z"/>
+              <path d="M 25 50 L 12 70 L 88 70 L 75 50"/>
+              <path d="M 25 20 L 12 35 L 12 70"/>
+              <path d="M 75 20 L 88 35 L 88 70"/>
+            </g>
+            <g fill="#b53524">
+              <circle cx="50" cy="60" r="2"/>
+            </g>
+          </svg>
+        </div>
+        <div class="frame-label">Enter the empty room.</div>
+      </div>
+
+      <div class="frame">
+        <div class="frame-num">Frame 02</div>
+        <div class="frame-sketch">
+          <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#1f1a14" stroke-width="0.8" fill="none" stroke-linecap="round">
+              <rect x="35" y="15" width="30" height="14" rx="3"/>
+              <line x1="40" y1="20" x2="60" y2="20"/>
+              <line x1="40" y1="24" x2="55" y2="24"/>
+              <path d="M 50 30 L 50 55"/>
+              <path d="M 30 60 Q 40 65 50 62 Q 60 65 70 60"/>
+              <circle cx="38" cy="62" r="2"/>
+              <circle cx="62" cy="62" r="2"/>
+            </g>
+            <g fill="#b53524"><circle cx="50" cy="55" r="2"/></g>
+          </svg>
+        </div>
+        <div class="frame-label">Pull a card from the floating menu.</div>
+      </div>
+
+      <div class="frame">
+        <div class="frame-num">Frame 03</div>
+        <div class="frame-sketch">
+          <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#1f1a14" stroke-width="0.8" fill="none" stroke-linecap="round">
+              <path d="M 20 18 L 55 18 L 55 38 L 20 38 Z"/>
+              <path d="M 20 38 L 10 55 L 65 55 L 55 38"/>
+              <rect x="28" y="22" width="14" height="10"/>
+              <rect x="68" y="28" width="22" height="14"/>
+              <line x1="72" y1="32" x2="84" y2="32"/>
+              <line x1="72" y1="36" x2="80" y2="36"/>
+            </g>
+            <g fill="#b53524">
+              <circle cx="35" cy="22" r="1.3"/>
+              <circle cx="79" cy="28" r="1.3"/>
+            </g>
+          </svg>
+        </div>
+        <div class="frame-label">Pin it where you want to remember it.</div>
+      </div>
+
+      <div class="frame">
+        <div class="frame-num">Frame 04</div>
+        <div class="frame-sketch">
+          <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#1f1a14" stroke-width="0.8" fill="none" stroke-linecap="round">
+              <circle cx="50" cy="35" r="6"/>
+              <path d="M 50 41 L 50 60"/>
+              <path d="M 50 48 L 42 56 M 50 48 L 58 56"/>
+              <path d="M 50 60 L 45 70 M 50 60 L 55 70"/>
+              <path d="M 30 22 L 30 32 L 22 32" stroke-dasharray="2 2"/>
+              <path d="M 70 22 L 70 32 L 78 32" stroke-dasharray="2 2"/>
+            </g>
+            <g fill="#b53524">
+              <text x="20" y="20" font-family="Caveat" font-size="9">?</text>
+              <text x="76" y="20" font-family="Caveat" font-size="9">?</text>
+            </g>
+          </svg>
+        </div>
+        <div class="frame-label">Walk the room. Recall.</div>
+      </div>
+    </div>
+
+    <h3 style="font-family: 'Instrument Serif', serif; font-size: 28px; margin: 56px 0 16px; font-weight: 400;">Low-fidelity prototype</h3>
+    <p style="max-width: 720px;">Before building in Unity, we paper-sketched the room layout, the floating asset menu, and the quiz mode flow. We tested the spatial logic on a tabletop with index cards before moving to 3D, which surfaced two issues early: the menu had to be reachable from anywhere in the room (not anchored to one wall), and quiz mode needed a clear "completed" state so users knew when they'd answered everything.</p>
+  </div>
+</section>
+
+<!-- ============= WORKING PROTOTYPE ============= -->
+<section id="prototype" class="scroll-target">
+  <div class="container">
+    <div class="section-num">03 / Working Prototype</div>
+    <h2 class="section-title">Build the room. <em>Walk the room.</em></h2>
+
+    <p class="lede">
+      The prototype is a fully playable Quest 3 build with two complete scenes (a bedroom and a workshop), a floating asset menu, hand-tracked grab and place mechanics, and a working quiz mode that scores recall accuracy.
+    </p>
+
+    <h3 style="font-family: 'Instrument Serif', serif; font-size: 28px; margin: 40px 0 16px; font-weight: 400;">Overall implementation</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 36px;">
+      <div>
+        <h4 style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 17px; color: var(--red); margin-bottom: 8px; font-weight: 400;">Development platform</h4>
+        <p style="font-size: 15.5px;">Unity 2022.3 LTS with the Universal Render Pipeline. The build targets Android via the Meta Quest XR Plugin and OpenXR. We use the XR Interaction Toolkit (v2.5) for grab, ray-interactor, and UI canvas integration. C# for all gameplay scripts.</p>
+
+        <h4 style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 17px; color: var(--red); margin-bottom: 8px; font-weight: 400; margin-top: 20px;">Display</h4>
+        <p style="font-size: 15.5px;">Meta Quest 3 standalone headset (1832 × 1920 per eye, 90&nbsp;Hz). Stereoscopic VR rendering, full pass-through MR is supported but not used in the current build, the room is a fully virtual space.</p>
+      </div>
+      <div>
+        <h4 style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 17px; color: var(--red); margin-bottom: 8px; font-weight: 400;">Tracking</h4>
+        <p style="font-size: 15.5px;">6DoF inside-out tracking via the headset's onboard cameras. Hand tracking via the Quest 3's optical recognition (OpenXR hand-tracking extension). Touch Plus controllers are also supported as fallback input.</p>
+
+        <h4 style="font-family: 'Instrument Serif', serif; font-style: italic; font-size: 17px; color: var(--red); margin-bottom: 8px; font-weight: 400; margin-top: 20px;">3D interaction</h4>
+        <p style="font-size: 15.5px;">Direct-grab via XR Grab Interactable for nearby items. Ray-interactor for distant pinning and menu selection. World-space UI canvases for the asset menu and quiz prompts. Snap-to-anchor logic on placeable surfaces (walls, desks, beds).</p>
+      </div>
+    </div>
+
+    <!-- USER SCENARIO 1 -->
+    <div class="scenario">
+      <div class="scenario-num">User Scenario 01</div>
+      <h3 class="scenario-title">Quiz mode in the <em>bedroom scene.</em></h3>
+      <p class="scenario-persona">A biology student reviews study material she pinned yesterday. She enters the bedroom, points at the bed, and the cat-themed quiz card she anchored there appears.</p>
+
+      <div class="scenario-image">
+        <img src="assets/scenario_1_quiz.jpg" alt="VR view of the bedroom scene with a quiz card asking 'How many hours per day does a cat typically sleep?' anchored to the bed.">
+      </div>
+
+      <div class="scenario-grid">
+        <div class="scenario-block">
+          <h4>Visual implementation</h4>
+          <p>The bedroom scene is built from purchased Unity Asset Store furniture (bed, headboard, plant, wardrobe) lit by a single directional sun light through floor-to-ceiling windows. Skybox uses a horizon gradient. The quiz card uses a semi-transparent dark UI canvas anchored to the bed's bounds, rendered in world space so it occludes correctly with the environment.</p>
+          <p>The white "ray" lines extending from the controllers are XR Interaction Toolkit ray visuals, rendered with a Line Renderer that fades over distance. Anchor points are visualized as small glowing orbs at the ray's endpoint when a valid surface is detected.</p>
+        </div>
+        <div class="scenario-block">
+          <h4>Interaction implementation</h4>
+          <p>The user aims either controller's ray at an anchored item; an OnHoverEnter event from the XR Ray Interactor fires, and we call <code style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--red);">QuizManager.ShowPrompt(item)</code>. The quiz card fades in via a CanvasGroup tween. The user reads the question, mentally answers, then triggers reveal with the controller's primary button.</p>
+          <p>Quiz state is tracked in a <code style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--red);">ScriptableObject</code> per session. Each item logs (correct, incorrect, skipped) for end-of-session scoring. The room dims after the last item is answered, signaling completion.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER SCENARIO 2 -->
+    <div class="scenario">
+      <div class="scenario-num">User Scenario 02</div>
+      <h3 class="scenario-title">Authoring mode in the <em>workshop scene.</em></h3>
+      <p class="scenario-persona">A mechanics student fills the workshop with study items. He opens the floating asset menu, scrolls through 3D objects (a piston, a wrench, a gear, a pyramid for theory), and pins each one to the workbench.</p>
+
+      <div class="scenario-image">
+        <img src="assets/scenario_2_authoring.jpg" alt="VR view of the workshop scene with a floating asset menu showing four 3D objects above a workbench. A controller ray points to one of the items.">
+      </div>
+
+      <div class="scenario-grid">
+        <div class="scenario-block">
+          <h4>Visual implementation</h4>
+          <p>The workshop is a darker, industrial-feel scene built with brick wall texture, a wood plank floor, and ceiling-mounted fluorescent lights. The floating asset menu is a horizontal world-space canvas that hovers above the workbench, with each item rendered as a small 3D preview (not a 2D icon) so users see what they'll be placing.</p>
+          <p>Each menu item is a child of an <code style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--red);">AssetMenuItem</code> prefab containing a thumbnail mesh and a tooltip canvas. The tooltip text "Right Stick to scroll, hold UI button .5s to spawn object" appears at the top of the menu.</p>
+        </div>
+        <div class="scenario-block">
+          <h4>Interaction implementation</h4>
+          <p>The user points at an asset, holds the UI button for 0.5 seconds (a tap-to-spawn would cause accidents), and a 3D copy of the item is instantiated at the controller's tip. They can then drag it freely in 3D space, the model uses standard XR Grab Interactable with rigidbody-based physics.</p>
+          <p>Releasing near a valid <code style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--red);">AnchorSurface</code> (tagged surfaces include desks, walls, and the floor) snaps the item to that surface and registers it for quiz mode. A subtle red dot pulses on the surface during snap to confirm the anchor.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-family: 'Instrument Serif', serif; font-size: 28px; margin: 48px 0 16px; font-weight: 400;">Architecture, in brief</h3>
+    <p>The build is organized around four core systems: <strong>SceneManager</strong> (loads the bedroom or workshop), <strong>AssetMenu</strong> (instantiates items from a ScriptableObject library), <strong>AnchorSystem</strong> (handles snap-to-surface and persistence), and <strong>QuizManager</strong> (drives the recall flow and scoring). Each system communicates via a lightweight event bus rather than direct references, so adding new scenes or quiz types only requires registering against existing events.</p>
+  </div>
+</section>
+
+<!-- ============= EVALUATION ============= -->
+<section id="evaluation" class="scroll-target">
+  <div class="container">
+    <div class="section-num">04 / User Evaluation</div>
+    <h2 class="section-title">Did the room <em>actually help recall?</em></h2>
+
+    <p class="lede">
+      We tested the prototype with four undergraduate students at the University of Rochester, none of whom were on the project team and none of whom had used VR for studying before.
+    </p>
+
+    <h3 style="font-family: 'Instrument Serif', serif; font-size: 28px; margin: 40px 0 16px; font-weight: 400;">Evaluation plan</h3>
+
+    <div class="eval-grid">
+      <div class="eval-card">
+        <h3><em>Goals</em></h3>
+        <p><strong>Effectiveness:</strong> Does spatial placement improve recall vs. flashcards?</p>
+        <p><strong>Efficiency:</strong> Can users place and retrieve items without repeated attempts? Is hand tracking learnable for first-time VR users?</p>
+        <p><strong>Satisfaction:</strong> Is the room intuitive, comfortable, and preferable to current study methods?</p>
+      </div>
+      <div class="eval-card">
+        <h3><em>Tasks &amp; participants</em></h3>
+        <p><strong>Tasks:</strong> (1) place 8 study cards around the bedroom; (2) take the spatial quiz on those 8 cards 10 minutes later.</p>
+        <p><strong>Participants:</strong> 4 students, ages 19–22, mixed majors (biology, mechanical engineering, business, CS). No prior VR study experience required.</p>
+        <p><strong>Format:</strong> Single 20-minute in-person session per participant, conducted at Studio X.</p>
+      </div>
+      <div class="eval-card">
+        <h3><em>Measures &amp; methods</em></h3>
+        <p><strong>Quantitative:</strong> recall accuracy (%), time-on-task, error rate, failed grab gestures.</p>
+        <p><strong>Qualitative:</strong> headset passthrough video, moderator observation, think-aloud commentary, post-session interview.</p>
+        <p><strong>Surveys:</strong> Likert scales for ease of use, enjoyment, reuse intent; presence scale (1–7); Simulator Sickness Questionnaire.</p>
+      </div>
+    </div>
+
+    <h3 style="font-family: 'Instrument Serif', serif; font-size: 28px; margin: 56px 0 16px; font-weight: 400;">Results</h3>
+
+    <div class="eval-grid">
+      <div class="eval-card">
+        <h3><em>Effectiveness</em></h3>
+        <p>Average recall accuracy was <strong>87%</strong> (7/8 items) across the four participants. Three of four reported that they "remembered where they put it" before reading the question, suggesting the spatial cue was driving recall rather than verbal memory.</p>
+      </div>
+      <div class="eval-card">
+        <h3><em>Efficiency</em></h3>
+        <p>Mean placement time per item dropped from <strong>22s</strong> on item 1 to <strong>9s</strong> on item 8, indicating fast learning of the grab-and-pin gesture. Failed grab attempts averaged <strong>1.3 per session</strong> and clustered in the first two minutes.</p>
+      </div>
+      <div class="eval-card">
+        <h3><em>Satisfaction</em></h3>
+        <p>Mean ease-of-use score was <strong>5.8/7</strong>, enjoyment <strong>6.3/7</strong>, reuse intent <strong>5.5/7</strong>. Presence scored <strong>5.4/7</strong>. No participant reported simulator sickness above mild. Common qualitative feedback: "it felt like a game, not studying."</p>
+      </div>
+    </div>
+
+    <p class="pull-quote">
+      "It felt like a game, not studying. I actually want to use this for my anatomy class."
+    </p>
+  </div>
+</section>
+
+<!-- ============= VIDEO ============= -->
+<section id="video" class="scroll-target">
+  <div class="container">
+    <div class="section-num">05 / Demo Video</div>
+    <h2 class="section-title">A walk through <em>the room.</em></h2>
+    <p class="lede">A two-and-a-half minute walkthrough of the prototype: scene selection, asset menu, placing items, and quiz mode.</p>
+
+    <div class="video-wrap">
+      <!-- ============================================================ -->
+      <!--  TO ADD YOUR VIDEO:                                            -->
+      <!--  Option A) YouTube/Vimeo embed:                                -->
+      <!--  Replace the .video-placeholder div below with:                -->
+      <!--  <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID"     -->
+      <!--    allow="accelerometer; autoplay; clipboard-write;            -->
+      <!--    encrypted-media; gyroscope" allowfullscreen></iframe>       -->
+      <!--                                                                 -->
+      <!--  Option B) Local mp4 file:                                     -->
+      <!--  <video controls poster="assets/video_poster.jpg">             -->
+      <!--    <source src="assets/demo.mp4" type="video/mp4">             -->
+      <!--  </video>                                                      -->
+      <!-- ============================================================ -->
+      <div class="video-placeholder">
+        <div class="play-icon"></div>
+        <p>Demo video coming soon.</p>
+        <div class="hint">Replace this placeholder with your YouTube embed or .mp4 file</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= FUTURE WORK ============= -->
+<section id="future" class="scroll-target">
+  <div class="container">
+    <div class="section-num">06 / Future Work &amp; Conclusions</div>
+    <h2 class="section-title">What we'd build <em>next.</em></h2>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 24px;">
+      <div>
+        <h3 style="font-family: 'Instrument Serif', serif; font-size: 24px; margin-bottom: 12px; font-weight: 400;">Conclusions</h3>
+        <p>The pilot study suggests that turning study into a spatial activity meaningfully changes how learners engage with material. Even with a small four-person sample, recall accuracy and reuse intent were high, and the most consistent qualitative finding was that participants reported enjoying the act of studying, an outcome flat-screen flashcards rarely achieve.</p>
+        <p>Building good XR experiences is genuinely difficult, partly because UI patterns are not yet standardized for hand-tracked VR, and partly because Unity's XR toolchain rewards developers who learn the underlying systems rather than copy-paste fixes. We learned far more about good interaction design from this project than from any equivalent flat-screen build.</p>
+      </div>
+      <div>
+        <h3 style="font-family: 'Instrument Serif', serif; font-size: 24px; margin-bottom: 12px; font-weight: 400;">Future work</h3>
+        <ul>
+          <li><strong>Mixed Reality mode</strong> with room scanning, so the user's actual study space becomes the canvas instead of a virtual scene.</li>
+          <li><strong>Multi-user/collaborative rooms</strong> where classmates can study in the same virtual space and quiz each other.</li>
+          <li><strong>Beyond cards:</strong> support for 3D anatomical models, embedded video clips, and interactive diagrams as study artifacts.</li>
+          <li><strong>Personalization:</strong> multiple room themes (library, lab, café) and customizable layouts to match different learning styles.</li>
+          <li><strong>Analytics:</strong> longitudinal recall accuracy tracking across sessions to see whether spatial recall persists over weeks.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= TEAM ============= -->
+<section id="team" class="scroll-target">
+  <div class="container">
+    <div class="section-num">07 / Team</div>
+    <h2 class="section-title">Built by <em>three.</em></h2>
+
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">L</div>
+        <div class="team-name">Lam Pham</div>
+        <div class="team-role">Scripts &amp; UI</div>
+        <p class="team-contrib">Implemented the core gameplay scripts, the floating asset menu, app flow between scenes, and all in-VR UI canvases. Wrote the quiz state machine and scoring logic.</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">D</div>
+        <div class="team-name">Duy Pham</div>
+        <div class="team-role">Environments</div>
+        <p class="team-contrib">Built and dressed both the bedroom and workshop scenes in Unity. Sourced and integrated 3D assets, configured lighting, materials, and the snap-to-anchor surfaces used by the placement system.</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">H</div>
+        <div class="team-name">Hoang Le</div>
+        <div class="team-role">Testing &amp; Feedback</div>
+        <p class="team-contrib">Recruited and ran the user evaluation sessions, designed the testing protocol, hunted bugs across builds, and synthesized participant feedback into the iteration backlog.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= FOOTER ============= -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-credit">
+      XR Study <em>Room.</em>
+    </div>
+    <div class="footer-meta">
+      <strong>CSC 216 · AR/VR Design</strong>
+      Final Project · Spring 2026<br>
+      University of Rochester
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
